@@ -13,9 +13,8 @@ gen64() {
 }
 install_3proxy() {
     echo "installing 3proxy"
-    URL="https://github.com/z3APA3A/3proxy/archive/refs/heads/master.zip"
-    wget -qO master.zip $URL
-    unzip -n master.zip
+    wget https://github.com/z3APA3A/3proxy/archive/refs/heads/master.zip
+    unzip -n 3proxy-master.zip
     cd 3proxy-master
     make -f Makefile.Linux
     mkdir -p /usr/local/etc/3proxy/bin
