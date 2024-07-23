@@ -16,9 +16,9 @@ gen64() {
 install_3proxy() {
     echo "installing 3proxy"
     URL="https://github.com/z3APA3A/3proxy/archive/refs/heads/master.zip"
-    wget -qO- $URL | bsdtar -xvf-
+    wget -qO master.zip $URL
     unzip -n master.zip
-    cd 3proxy-master/
+    cd 3proxy-master
 
     # Ensure all dependencies are installed
     yum -y install gcc make gcc-c++ zlib-devel openssl-devel pcre-devel
