@@ -1,4 +1,5 @@
 #!/bin/sh
+
 random() {
     tr </dev/urandom -dc A-Za-z0-9 | head -c5
     echo
@@ -14,14 +15,18 @@ gen64() {
 
 install_3proxy() {
     echo "installing 3proxy"
-    URL="https://raw.githubusercontent.com/quayvlog/quayvlog/main/3proxy-3proxy-0.8.6.tar.gz"
+    URL="https://github.com/z3APA3A/3proxy/archive/refs/heads/master.zip"
     wget -qO- $URL | bsdtar -xvf-
-    cd 3proxy-3proxy-0.8.6
+    unzip -n master.zip
+    cd 3proxy-master/
 
     # Ensure all dependencies are installed
-    yum -y install gcc make gcc-c++ zlib-devel
+    yum -y install gcc make gcc-c++ zlib-devel openssl-devel pcre-devel
 
+    # Attempt to build 3proxy
     make -f Makefile.Linux
+
+    # Check if the 3proxy binary was created
     if [ ! -f src/3proxy ]; then
         echo "Error: 3proxy binary not found!"
         exit 1
@@ -68,8 +73,8 @@ upload_proxy() {
     echo "Proxy is ready! Format IP:PORT:LOGIN:PASS"
     echo "Download zip archive from: ${URL}"
     echo "Password: ${PASS}"
-
 }
+
 gen_data() {
     seq $FIRST_PORT $LAST_PORT | while read port; do
         echo "usr$(random)/pass$(random)/$IP4/$port/$(gen64 $IP6)"
@@ -87,8 +92,9 @@ gen_ifconfig() {
 $(awk -F "/" '{print "ifconfig eth0 inet6 add " $5 "/64"}' ${WORKDATA})
 EOF
 }
+
 echo "installing apps"
-yum -y install gcc net-tools bsdtar zip curl iptables-services make gcc-c++ zlib-devel >/dev/null
+yum -y install gcc net-tools bsdtar zip curl iptables-services make gcc-c++ zlib-devel openssl-devel pcre-devel >/dev/null
 
 install_3proxy
 
