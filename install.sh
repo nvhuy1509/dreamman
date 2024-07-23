@@ -1,5 +1,4 @@
 #!/bin/sh
-
 random() {
     tr </dev/urandom -dc A-Za-z0-9 | head -c5
     echo
@@ -12,30 +11,20 @@ gen64() {
     }
     echo "$1:$(ip64):$(ip64):$(ip64):$(ip64)"
 }
-
 install_3proxy() {
     echo "installing 3proxy"
     URL="https://github.com/z3APA3A/3proxy/archive/refs/heads/master.zip"
     wget -qO master.zip $URL
     unzip -n master.zip
     cd 3proxy-master
-
-    # Ensure all dependencies are installed
-    yum -y install gcc make gcc-c++ zlib-devel openssl-devel pcre-devel
-
-    # Attempt to build 3proxy
     make -f Makefile.Linux
-
-    # Check if the 3proxy binary was created
-    if [ ! -f src/3proxy ]; then
-        echo "Error: 3proxy binary not found!"
-        exit 1
-    fi
-
     mkdir -p /usr/local/etc/3proxy/bin
     mkdir -p /usr/local/etc/3proxy/logs
     mkdir -p /usr/local/etc/3proxy/stat
     cp src/3proxy /usr/local/etc/3proxy/bin/
+    cp ./scripts/rc.d/proxy.sh /etc/systemd/system/3proxy.service
+    chmod +x /etc/systemd/system/3proxy.service
+    systemctl enable 3proxy
     cd $WORKDIR
 }
 
@@ -73,8 +62,8 @@ upload_proxy() {
     echo "Proxy is ready! Format IP:PORT:LOGIN:PASS"
     echo "Download zip archive from: ${URL}"
     echo "Password: ${PASS}"
-}
 
+}
 gen_data() {
     seq $FIRST_PORT $LAST_PORT | while read port; do
         echo "usr$(random)/pass$(random)/$IP4/$port/$(gen64 $IP6)"
@@ -92,16 +81,15 @@ gen_ifconfig() {
 $(awk -F "/" '{print "ifconfig eth0 inet6 add " $5 "/64"}' ${WORKDATA})
 EOF
 }
-
 echo "installing apps"
-yum -y install gcc net-tools bsdtar zip curl iptables-services make gcc-c++ zlib-devel openssl-devel pcre-devel >/dev/null
+yum -y install gcc net-tools bsdtar zip curl iptables-services >/dev/null
 
 install_3proxy
 
 echo "working folder = /home/proxy-installer"
 WORKDIR="/home/proxy-installer"
 WORKDATA="${WORKDIR}/data.txt"
-mkdir -p $WORKDIR && cd $_
+mkdir $WORKDIR && cd $_
 
 IP4=$(curl -4 -s icanhazip.com)
 IP6=$(curl -6 -s icanhazip.com | cut -f1-4 -d':')
@@ -129,15 +117,14 @@ After=network.target
 [Service]
 Type=simple
 ExecStart=/usr/local/etc/3proxy/bin/3proxy /usr/local/etc/3proxy/3proxy.cfg
-ExecReload=/bin/kill -HUP \$MAINPID
-ExecStop=/bin/kill -TERM \$MAINPID
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/bin/kill -TERM $MAINPID
 Restart=always
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-systemctl daemon-reload
 systemctl enable 3proxy
 systemctl start 3proxy
 
