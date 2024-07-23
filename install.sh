@@ -15,10 +15,17 @@ gen64() {
 
 install_3proxy() {
     echo "installing 3proxy"
-    dnf install -y 3proxy
+    wget https://github.com/z3APA3A/3proxy/archive/refs/heads/master.zip
+    unzip master.zip
+    cd 3proxy-master
+    dnf install -y gcc make gcc-c++ zlib-devel openssl-devel pcre-devel
+    make -f Makefile.Linux
     # Verify installation
-    if [ ! -x /usr/local/etc/3proxy/bin/3proxy ]; then
-        echo "Error: 3proxy binary not found or not executable!"
+    if [ -f src/3proxy ]; then
+        mkdir -p /usr/local/etc/3proxy/bin
+        cp src/3proxy /usr/local/etc/3proxy/bin/
+    else
+        echo "Error: 3proxy binary not found in src/"
         exit 1
     fi
 }
@@ -138,7 +145,7 @@ if ! systemctl is-active --quiet 3proxy; then
     journalctl -u 3proxy.service -b
     exit 1
 fi
-
+journalctl -u 3proxy.service -b
 gen_proxy_file_for_user
 
 upload_proxy
