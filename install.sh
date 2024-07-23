@@ -11,12 +11,22 @@ gen64() {
     }
     echo "$1:$(ip64):$(ip64):$(ip64):$(ip64)"
 }
+
 install_3proxy() {
     echo "installing 3proxy"
     URL="https://raw.githubusercontent.com/quayvlog/quayvlog/main/3proxy-3proxy-0.8.6.tar.gz"
     wget -qO- $URL | bsdtar -xvf-
     cd 3proxy-3proxy-0.8.6
+
+    # Ensure all dependencies are installed
+    yum -y install gcc make gcc-c++ zlib-devel
+
     make -f Makefile.Linux
+    if [ ! -f src/3proxy ]; then
+        echo "Error: 3proxy binary not found!"
+        exit 1
+    fi
+
     mkdir -p /usr/local/etc/3proxy/bin
     mkdir -p /usr/local/etc/3proxy/logs
     mkdir -p /usr/local/etc/3proxy/stat
@@ -78,14 +88,14 @@ $(awk -F "/" '{print "ifconfig eth0 inet6 add " $5 "/64"}' ${WORKDATA})
 EOF
 }
 echo "installing apps"
-yum -y install gcc net-tools bsdtar zip curl iptables-services make >/dev/null
+yum -y install gcc net-tools bsdtar zip curl iptables-services make gcc-c++ zlib-devel >/dev/null
 
 install_3proxy
 
 echo "working folder = /home/proxy-installer"
 WORKDIR="/home/proxy-installer"
 WORKDATA="${WORKDIR}/data.txt"
-mkdir $WORKDIR && cd $_
+mkdir -p $WORKDIR && cd $_
 
 IP4=$(curl -4 -s icanhazip.com)
 IP6=$(curl -6 -s icanhazip.com | cut -f1-4 -d':')
