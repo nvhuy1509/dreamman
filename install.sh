@@ -13,19 +13,42 @@ gen64() {
 }
 install_3proxy() {
     echo "installing 3proxy"
-    wget https://github.com/z3APA3A/3proxy/archive/refs/heads/master.zip
+    URL="https://github.com/z3APA3A/3proxy/archive/refs/heads/master.zip"
+    wget -O 3proxy-master.zip $URL
     unzip -n 3proxy-master.zip
     cd 3proxy-master
+
+    # Ensure all dependencies are installed
+    yum -y install gcc make gcc-c++ zlib-devel openssl-devel pcre-devel
+
+    # Attempt to build 3proxy
     make -f Makefile.Linux
+
+    # Check if the 3proxy binary was created
+    if [ ! -f src/3proxy ]; then
+        echo "Error: 3proxy binary not found!"
+        exit 1
+    fi
+
     mkdir -p /usr/local/etc/3proxy/bin
     mkdir -p /usr/local/etc/3proxy/logs
     mkdir -p /usr/local/etc/3proxy/stat
     cp src/3proxy /usr/local/etc/3proxy/bin/
-    cp ./scripts/rc.d/proxy.sh /etc/systemd/system/3proxy.service
-    chmod +x /etc/systemd/system/3proxy.service
+
+    # Check if proxy.sh exists before copying
+    if [ -f ./scripts/rc.d/proxy.sh ]; then
+        cp ./scripts/rc.d/proxy.sh /etc/systemd/system/3proxy.service
+        chmod +x /etc/systemd/system/3proxy.service
+    else
+        echo "Error: proxy.sh not found!"
+        exit 1
+    fi
+
+    systemctl daemon-reload
     systemctl enable 3proxy
     cd $WORKDIR
 }
+
 
 gen_3proxy() {
     cat <<EOF
