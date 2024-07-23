@@ -15,7 +15,12 @@ gen64() {
 
 install_3proxy() {
     echo "installing 3proxy"
-   dnf install -y 3proxy
+    dnf install -y 3proxy
+    # Verify installation
+    if [ ! -x /usr/local/etc/3proxy/bin/3proxy ]; then
+        echo "Error: 3proxy binary not found or not executable!"
+        exit 1
+    fi
 }
 
 gen_3proxy() {
@@ -116,9 +121,23 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
+# Check if the systemd service file exists and is correct
+if [ ! -f /etc/systemd/system/3proxy.service ]; then
+    echo "Error: 3proxy systemd service file not found!"
+    exit 1
+fi
+
+# Reload systemd and start the service
 systemctl daemon-reload
 systemctl enable 3proxy
 systemctl start 3proxy
+
+# Check if the service is running
+if ! systemctl is-active --quiet 3proxy; then
+    echo "Error: 3proxy service failed to start!"
+    journalctl -u 3proxy.service -b
+    exit 1
+fi
 
 gen_proxy_file_for_user
 
