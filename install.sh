@@ -1,5 +1,5 @@
-
 #!/bin/sh
+
 random() {
     tr </dev/urandom -dc A-Za-z0-9 | head -c5
     echo
@@ -12,10 +12,10 @@ gen64() {
     }
     echo "$1:$(ip64):$(ip64):$(ip64):$(ip64)"
 }
+
 install_3proxy() {
     echo "installing 3proxy"
-	dnf install -y 3proxy
-    
+   dnf install -y 3proxy
 }
 
 gen_3proxy() {
@@ -47,14 +47,13 @@ EOF
 upload_proxy() {
     local PASS=$(random)
     zip --password $PASS proxy.zip proxy.txt
-
-    # Hiển thị nội dung của proxy.txt ra màn hình 
     echo "Proxy list:"
     cat proxy.txt
 
     echo "Proxy is ready! Format IP:PORT:LOGIN:PASS"
     echo "Password for zip file: ${PASS}"
 }
+
 gen_data() {
     seq $FIRST_PORT $LAST_PORT | while read port; do
         echo "usr$(random)/pass$(random)/$IP4/$port/$(gen64 $IP6)"
@@ -72,15 +71,16 @@ gen_ifconfig() {
 $(awk -F "/" '{print "ifconfig eth0 inet6 add " $5 "/64"}' ${WORKDATA})
 EOF
 }
+
 echo "installing apps"
-yum -y install gcc net-tools bsdtar zip curl iptables-services >/dev/null
+yum -y install gcc net-tools bsdtar zip curl iptables-services make gcc-c++ zlib-devel openssl-devel pcre-devel >/dev/null
 
 install_3proxy
 
 echo "working folder = /home/proxy-installer"
 WORKDIR="/home/proxy-installer"
 WORKDATA="${WORKDIR}/data.txt"
-mkdir $WORKDIR && cd $_
+mkdir -p $WORKDIR && cd $_
 
 IP4=$(curl -4 -s icanhazip.com)
 IP6=$(curl -6 -s icanhazip.com | cut -f1-4 -d':')
@@ -108,14 +108,15 @@ After=network.target
 [Service]
 Type=simple
 ExecStart=/usr/local/etc/3proxy/bin/3proxy /usr/local/etc/3proxy/3proxy.cfg
-ExecReload=/bin/kill -HUP $MAINPID
-ExecStop=/bin/kill -TERM $MAINPID
+ExecReload=/bin/kill -HUP \$MAINPID
+ExecStop=/bin/kill -TERM \$MAINPID
 Restart=always
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
+systemctl daemon-reload
 systemctl enable 3proxy
 systemctl start 3proxy
 
