@@ -21,9 +21,6 @@ install_3proxy() {
     mkdir -p /usr/local/etc/3proxy/logs
     mkdir -p /usr/local/etc/3proxy/stat
     cp src/3proxy /usr/local/etc/3proxy/bin/
-    cp ./scripts/rc.d/proxy.sh /etc/systemd/system/3proxy.service
-    chmod +x /etc/systemd/system/3proxy.service
-    systemctl enable 3proxy
     cd $WORKDIR
 }
 
@@ -81,7 +78,7 @@ $(awk -F "/" '{print "ifconfig eth0 inet6 add " $5 "/64"}' ${WORKDATA})
 EOF
 }
 echo "installing apps"
-yum -y install gcc net-tools bsdtar zip curl iptables-services >/dev/null
+yum -y install gcc net-tools bsdtar zip curl iptables-services make >/dev/null
 
 install_3proxy
 
@@ -116,14 +113,15 @@ After=network.target
 [Service]
 Type=simple
 ExecStart=/usr/local/etc/3proxy/bin/3proxy /usr/local/etc/3proxy/3proxy.cfg
-ExecReload=/bin/kill -HUP $MAINPID
-ExecStop=/bin/kill -TERM $MAINPID
+ExecReload=/bin/kill -HUP \$MAINPID
+ExecStop=/bin/kill -TERM \$MAINPID
 Restart=always
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
+systemctl daemon-reload
 systemctl enable 3proxy
 systemctl start 3proxy
 
