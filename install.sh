@@ -47,7 +47,7 @@ upload_proxy() {
     local PASS=$(random)
     zip --password $PASS proxy.zip proxy.txt
 
-    # Hiển thị nội dung của proxy.txt ra màn hình
+    # Hiển thị nội dung của proxy.txt ra màn hình 
     echo "Proxy list:"
     cat proxy.txt
 
