@@ -13,11 +13,6 @@ gen64() {
     echo "$1:$(ip64):$(ip64):$(ip64):$(ip64)"
 }
 
-install_3proxy() {
-    echo "installing 3proxy"
-   dnf install -y 3proxy
-}
-
 gen_3proxy() {
     cat <<EOF
 daemon
@@ -75,8 +70,6 @@ EOF
 echo "installing apps"
 yum -y install gcc net-tools bsdtar zip curl iptables-services make gcc-c++ zlib-devel openssl-devel pcre-devel >/dev/null
 
-install_3proxy
-
 echo "working folder = /home/proxy-installer"
 WORKDIR="/home/proxy-installer"
 WORKDATA="${WORKDIR}/data.txt"
@@ -98,7 +91,7 @@ gen_iptables >$WORKDIR/boot_iptables.sh
 gen_ifconfig >$WORKDIR/boot_ifconfig.sh
 chmod +x ${WORKDIR}/boot_*.sh
 
-gen_3proxy >/usr/local/etc/3proxy/3proxy.cfg
+gen_3proxy >/root/3proxy-master/3proxy.cfg
 
 cat >/etc/systemd/system/3proxy.service <<EOF
 [Unit]
@@ -107,7 +100,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/etc/3proxy/bin/3proxy /usr/local/etc/3proxy/3proxy.cfg
+ExecStart=/usr/local/etc/3proxy/bin/3proxy /root/3proxy-master/3proxy.cfg
 ExecReload=/bin/kill -HUP \$MAINPID
 ExecStop=/bin/kill -TERM \$MAINPID
 Restart=always
