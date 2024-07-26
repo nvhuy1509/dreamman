@@ -91,16 +91,16 @@ gen_iptables >$WORKDIR/boot_iptables.sh
 gen_ifconfig >$WORKDIR/boot_ifconfig.sh
 chmod +x ${WORKDIR}/boot_*.sh
 
-gen_3proxy >/root/3proxy-master/3proxy.cfg
+gen_3proxy >/etc/3proxy.cfg
 
-cat >/etc/systemd/system/3proxy.service <<EOF
+cat >/usr/lib/systemd/system/3proxy.service <<EOF
 [Unit]
 Description=3proxy Proxy Server
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/etc/3proxy/bin/3proxy /root/3proxy-master/3proxy.cfg
+ExecStart=/usr/bin/3proxy /etc/3proxy.cfg
 ExecReload=/bin/kill -HUP \$MAINPID
 ExecStop=/bin/kill -TERM \$MAINPID
 Restart=always
