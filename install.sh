@@ -15,21 +15,27 @@ gen64() {
 
 gen_3proxy() {
     cat <<EOF
-daemon
-maxconn 1000
+nserver 8.8.8.8
+nserver 8.8.4.4
+nserver 2001:4860:4860::8888
+nserver 2001:4860:4860::8844
 nscache 65536
 timeouts 1 5 30 60 180 1800 15 60
-setgid 65535
-setuid 65535
-flush
-auth strong
+log /var/log/3proxy.log
+logformat "L%t|%n|%e|%a|%r|%T|%c|%C|%R|%D"
+rotate 30
 
-users $(awk -F "/" 'BEGIN{ORS="";} {print $1 ":CL:" $2 " "}' ${WORKDATA})
+internal 207.148.64.221
+external 2001:19f0:4400:5206::1
 
-$(awk -F "/" '{print "auth strong\n" \
-"allow " $1 "\n" \
-"proxy -6 -n -a -p" $4 " -i" $3 " -e"$5"\n" \
-"flush\n"}' ${WORKDATA})
+auth none
+allow * * *
+
+# Proxy and SOCKS ports range
+for ((port=10000; port<=20000; port++)); do
+    proxy -p$port
+    socks -p$port
+done
 EOF
 }
 
@@ -92,6 +98,9 @@ gen_ifconfig >$WORKDIR/boot_ifconfig.sh
 chmod +x ${WORKDIR}/boot_*.sh
 
 gen_3proxy >/etc/3proxy.cfg
+
+sudo systemctl restart NetworkManager
+sudo systemctl restart 3proxy
 
 cat >/usr/lib/systemd/system/3proxy.service <<EOF
 [Unit]
