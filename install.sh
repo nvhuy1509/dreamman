@@ -13,29 +13,28 @@ gen64() {
     echo "$1:$(ip64):$(ip64):$(ip64):$(ip64)"
 }
 
+install_3proxy() {
+    echo "installing 3proxy"
+   dnf install -y 3proxy
+}
+
 gen_3proxy() {
     cat <<EOF
-nserver 8.8.8.8
-nserver 8.8.4.4
-nserver 2001:4860:4860::8888
-nserver 2001:4860:4860::8844
+daemon
+maxconn 1000
 nscache 65536
 timeouts 1 5 30 60 180 1800 15 60
-log /var/log/3proxy.log
-logformat "L%t|%n|%e|%a|%r|%T|%c|%C|%R|%D"
-rotate 30
+setgid 65535
+setuid 65535
+flush
+auth strong
 
-internal 207.148.64.221
-external 2001:19f0:4400:5206::1
+users $(awk -F "/" 'BEGIN{ORS="";} {print $1 ":CL:" $2 " "}' ${WORKDATA})
 
-auth none
-allow * * *
-
-# Proxy and SOCKS ports range
-for ((port=10000; port<=20000; port++)); do
-    proxy -p$port
-    socks -p$port
-done
+$(awk -F "/" '{print "auth strong\n" \
+"allow " $1 "\n" \
+"proxy -6 -n -a -p" $4 " -i" $3 " -e"$5"\n" \
+"flush\n"}' ${WORKDATA})
 EOF
 }
 
@@ -76,6 +75,8 @@ EOF
 echo "installing apps"
 yum -y install gcc net-tools bsdtar zip curl iptables-services make gcc-c++ zlib-devel openssl-devel pcre-devel >/dev/null
 
+install_3proxy
+
 echo "working folder = /home/proxy-installer"
 WORKDIR="/home/proxy-installer"
 WORKDATA="${WORKDIR}/data.txt"
@@ -89,7 +90,7 @@ echo "Internal ip = ${IP4}. External sub for ip6 = ${IP6}"
 echo "How many proxy do you want to create? Example 500"
 read COUNT
 
-FIRST_PORT=11000
+FIRST_PORT=10000
 LAST_PORT=$(($FIRST_PORT + $COUNT))
 
 gen_data >$WORKDIR/data.txt
@@ -97,19 +98,16 @@ gen_iptables >$WORKDIR/boot_iptables.sh
 gen_ifconfig >$WORKDIR/boot_ifconfig.sh
 chmod +x ${WORKDIR}/boot_*.sh
 
-gen_3proxy >/etc/3proxy.cfg
+gen_3proxy >/usr/local/etc/3proxy/3proxy.cfg
 
-sudo systemctl restart NetworkManager
-sudo systemctl restart 3proxy
-
-cat >/usr/lib/systemd/system/3proxy.service <<EOF
+cat >/etc/systemd/system/3proxy.service <<EOF
 [Unit]
 Description=3proxy Proxy Server
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/3proxy /etc/3proxy.cfg
+ExecStart=/usr/local/etc/3proxy/bin/3proxy /usr/local/etc/3proxy/3proxy.cfg
 ExecReload=/bin/kill -HUP \$MAINPID
 ExecStop=/bin/kill -TERM \$MAINPID
 Restart=always
